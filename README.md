@@ -52,4 +52,4 @@ the artifact. Feedback welcome.
 
 ## License
 
-TBD.
+[Apache License 2.0](./LICENSE).
