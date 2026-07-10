@@ -415,14 +415,19 @@ drift), plus the `cmd/stamp` CLI (`--in`/`--jsonnet`/`--out`/`--check`/`--no-val
 15 TDD tasks, all committed; a final code review was applied (missing-sentinel now errors,
 `deepCopy` is fallible, deterministic component ordering, cached schema).
 
-### Deferred to Plan 2 (hardening, from Plan 1's final review — not defects)
+### Installability acceptance gate (done)
 
-- **Sentinel guessability:** `HOLESENTINEL<i>END` is a fixed, guessable token; if a real
-  manifest value ever contains it, substitution would corrupt silently. Harden to a
-  hash/nonce-based sentinel before the jsonnet producer feeds diverse manifests.
-- **`quote` + `required` interaction:** produces valid-but-redundant Helm; decide/test the
-  combination.
-- **Colon-in-key extraction** in `replaceTokenBlock`: derive the key from the JSON Pointer's
-  last token rather than splitting the marshaled line.
-- **Hole path shadowing a component gate** (e.g. a hole at `web.enabled`): add a validation
-  check or document the footgun.
+`testdata/installable.json` renders a complete Deployment + Service; `TestInstallableChart`
+gates the built chart through `helm lint` → `helm template` → `kubeconform -strict`. This is
+the installability bar every Plan 2 generator must meet. Real-cluster `kind` install proof is a
+tracked follow-up (issue #8).
+
+### Hardening from Plan 1's final review (done)
+
+- **Sentinel guessability** (#3): sentinel is now `CWHOLE<sha256(file)[:16]><i>END` — a
+  per-resource nonce, effectively uncollidable with real content, still deterministic.
+- **`quote` + `required`** (#4): confirmed valid (`required … | quote`) and covered by a test.
+- **Colon-in-key** (#5): `replaceTokenBlock` preserves the key prefix verbatim, so keys with
+  colons/quotes survive.
+- **Hole path shadowing a component gate** (#6): `buildValues` now rejects a hole whose path
+  equals a `<component>.enabled` gate.

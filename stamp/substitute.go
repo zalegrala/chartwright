@@ -50,27 +50,30 @@ func replaceTokenInline(lines []string, tok, expr string) error {
 // hole (toYaml | nindent), optionally guarded by {{- with }}.
 func replaceTokenBlock(lines []string, tok string, h interchange.Hole) ([]string, error) {
 	for i, line := range lines {
-		if !strings.Contains(line, tok) {
+		pos := strings.Index(line, tok)
+		if pos < 0 {
 			continue
 		}
 		indent := len(line) - len(strings.TrimLeft(line, " "))
 		pad := strings.Repeat(" ", indent)
 		cpad := strings.Repeat(" ", indent+2)
 		childIndent := strconv.Itoa(indent + 2)
-		key := strings.TrimSpace(strings.SplitN(strings.TrimSpace(line), ":", 2)[0])
+		// Preserve the key prefix verbatim (everything before the sentinel value),
+		// so keys containing colons or requiring quotes survive untouched.
+		keyLine := strings.TrimRight(line[:pos], " ")
 		path := helmPath(h.Path)
 
 		var repl []string
 		if renderMode(h) == "with" {
 			repl = []string{
 				pad + "{{- with " + path + " }}",
-				pad + key + ":",
+				keyLine,
 				cpad + "{{- toYaml . | nindent " + childIndent + " }}",
 				pad + "{{- end }}",
 			}
 		} else {
 			repl = []string{
-				pad + key + ":",
+				keyLine,
 				cpad + "{{- toYaml " + path + " | nindent " + childIndent + " }}",
 			}
 		}
