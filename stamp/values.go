@@ -46,14 +46,21 @@ func buildValues(doc interchange.Document) (map[string]interface{}, error) {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	gates := make(map[string]bool, len(names))
 	for _, name := range names {
 		c := doc.Components[name]
-		if err := setDotted(root, name+".enabled", c.Enabled); err != nil {
+		gate := name + ".enabled"
+		gates[gate] = true
+		if err := setDotted(root, gate, c.Enabled); err != nil {
 			return nil, err
 		}
 	}
 	for _, r := range doc.Resources {
 		for _, h := range r.Holes {
+			if gates[h.Path] {
+				return nil, fmt.Errorf("hole %q shadows the component gate at the same path; "+
+					"pick a different values path", h.Path)
+			}
 			if h.Default == nil {
 				continue
 			}

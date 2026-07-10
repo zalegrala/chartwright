@@ -1,6 +1,7 @@
 package stamp
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"strings"
 
@@ -15,9 +16,14 @@ func renderResource(r interchange.Resource) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resource %s: %w", r.File, err)
 	}
+	// Per-resource nonce derived from the file path makes the sentinel
+	// effectively impossible to collide with real manifest content, while
+	// staying deterministic (same input -> same output). Hex + letters only,
+	// so it survives YAML marshaling unquoted.
+	nonce := fmt.Sprintf("%x", sha256.Sum256([]byte(r.File)))[:16]
 	tokens := make(map[int]string, len(r.Holes))
 	for i, h := range r.Holes {
-		tok := fmt.Sprintf("HOLESENTINEL%dEND", i)
+		tok := fmt.Sprintf("CWHOLE%s%dEND", nonce, i)
 		tokens[i] = tok
 		if err := setAtPointer(m, h.Pointer, tok); err != nil {
 			return "", fmt.Errorf("resource %s: %w", r.File, err)
