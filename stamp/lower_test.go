@@ -3,6 +3,8 @@ package stamp
 import (
 	"reflect"
 	"testing"
+
+	"github.com/zalegrala/chartwright/interchange"
 )
 
 func TestLowerManifestScalar(t *testing.T) {
@@ -105,6 +107,33 @@ func TestLowerManifestNoMarkers(t *testing.T) {
 	}
 	if !reflect.DeepEqual(clean, m) {
 		t.Errorf("manifest changed: %v", clean)
+	}
+}
+
+func TestLowerDocumentAppendsHoles(t *testing.T) {
+	doc := interchange.Document{
+		Chart: interchange.Chart{Name: "d", Version: "0.1.0"},
+		Resources: []interchange.Resource{{
+			File: "templates/x.yaml",
+			Manifest: map[string]interface{}{
+				"spec": map[string]interface{}{
+					"replicas": map[string]interface{}{
+						"__cw_hole__": map[string]interface{}{"path": "x.replicas", "default": float64(2)},
+					},
+				},
+			},
+		}},
+	}
+	out, err := Lower(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := out.Resources[0]
+	if len(r.Holes) != 1 || r.Holes[0].Pointer != "/spec/replicas" {
+		t.Fatalf("holes = %+v", r.Holes)
+	}
+	if r.Manifest["spec"].(map[string]interface{})["replicas"] != float64(2) {
+		t.Errorf("manifest not cleaned")
 	}
 }
 

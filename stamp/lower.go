@@ -78,6 +78,21 @@ func lowerManifest(m map[string]interface{}) (map[string]interface{}, []intercha
 	return clean, holes, nil
 }
 
+// Lower applies lowerManifest to every resource: it replaces each resource's
+// manifest with the cleaned form and appends the extracted holes to any holes
+// the resource already declared. Resources with no markers are unchanged.
+func Lower(doc interchange.Document) (interchange.Document, error) {
+	for i := range doc.Resources {
+		clean, holes, err := lowerManifest(doc.Resources[i].Manifest)
+		if err != nil {
+			return interchange.Document{}, fmt.Errorf("resource %s: %w", doc.Resources[i].File, err)
+		}
+		doc.Resources[i].Manifest = clean
+		doc.Resources[i].Holes = append(doc.Resources[i].Holes, holes...)
+	}
+	return doc, nil
+}
+
 // walk recursively cleans a value, collecting holes into *out.
 func walk(v interface{}, pointer string, out *[]interchange.Hole) (interface{}, error) {
 	if payload := asMarker(v); payload != nil {
