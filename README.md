@@ -32,6 +32,7 @@ config rather than exposing every knob. See [`DESIGN.md`](./DESIGN.md) for the f
 | Jsonnet authoring layer (`helm.value`, generators) | ✅ working (deployment/service/statefulset/pdb/configmap/vpa/servicemonitor) |
 | Config-mount primitive (structured config → ConfigMap → mount) | ✅ working |
 | CRD generators + kubeconform CRD validation | ✅ working |
+| Version/capability gating (`.Capabilities`, kubeVersion) | ✅ working |
 | Tempo descriptors + example wiring | ⏳ not started |
 
 See [`DESIGN.md` §14](./DESIGN.md) for the roadmap.

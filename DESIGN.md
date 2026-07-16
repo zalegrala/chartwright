@@ -466,9 +466,11 @@ monitoring CRDs.
     must see *all* components — shared/cluster RBAC, `StorageClass`, cluster-wide NetworkPolicy,
     an aggregating Ingress, a gateway. Planned shape: a second `build(chart, components)`
     generator tier alongside the per-component registry.
-  - **Arbitrary gate expressions** (#12): today a resource's gate is hardcoded to
-    `<component>.enabled`; charts also gate on `.Capabilities` and arbitrary values. Planned:
-    let a generator/descriptor supply the gate expression (default unchanged).
+  - **Arbitrary gate expressions** (#12): ✅ **done.** A resource may carry `gateExpr` — a
+    verbatim Helm boolean (no `.Values.` prefix) taking precedence over the `<component>.enabled`
+    default. Jsonnet: `helm.gate.{enabled,hasAPI,kubeAtLeast,all}` + a generator-level `gate(c)`
+    override; the `pdb` generator gates on `policy/v1` being present. This is the sanctioned way
+    to gate a whole resource on k8s version/API capability.
   - **Helm built-ins** (`.Release.*`, `.Chart.*`, `.Capabilities.*`) — already expressible via
     `helm.raw(path, '{{ .Release.Namespace }}')`; `raw` is the sanctioned path, no change needed.
 
