@@ -5,25 +5,46 @@
 > ⚠️ **Early work in progress.** APIs, formats, and structure are unstable and will break
 > without notice.
 
-A spec-driven **Helm chart stamper**. Instead of hand-maintaining a Helm chart, you describe
-components once and generate a complete, installable chart deterministically:
+**chartwright stamps a Helm chart out of your good deployment practices.**
+
+You encode Kubernetes/application practice *once* — as small generator functions (probes,
+security contexts, resource requests, PodDisruptionBudgets, config handling, …) — and every
+component in every chart is stamped from them, uniformly. Learn a better practice? Change one
+generator, re-stamp, and *every* chart inherits it. The Helm chart is disposable build output;
+the generators are the institutional knowledge.
 
 ```
 jsonnet (components + generators)  →  interchange JSON  →  stamper  →  Helm chart on disk
 ```
 
-The idea: keep Kubernetes/application opinions where they already live (jsonnet), express the
-*variable* points as declared "holes", and let a small, project-agnostic Go tool assemble the
-chart — templates, `values.yaml`, `values.schema.json`, `Chart.yaml`. Output is byte-stable so
-a consumer's CI can fail on uncommitted chart drift. The first target is Grafana Tempo
-(microservices and single-binary), but the core is not Tempo-specific.
+You describe components as data ("distributor is a Deployment with these ports and this
+config"); generators shape them with your defaults; `helm.value()` marks the few things that
+stay tunable at install time. A small, project-agnostic Go tool assembles the chart —
+templates, `values.yaml`, `values.schema.json`, `Chart.yaml`. Output is byte-stable, so a
+consumer's CI fails on uncommitted chart drift. First target is Grafana Tempo, but the core
+knows nothing about Tempo — or even Kubernetes semantics.
 
-## Why
+## Why not just write the chart yourself?
 
-Hand-maintained charts rot because nobody wants the cognitive load of owning deployment
-consequences, and 1:1 value-to-config mappings are a maintenance tax. This approach makes the
-rendered chart a reviewable build artifact and gives components *one* structured way to pass
-config rather than exposing every knob. See [`DESIGN.md`](./DESIGN.md) for the full rationale.
+Because a hand-written chart is a *liability*, and generators are an *asset*:
+
+- **Practices are encoded once and applied everywhere.** The `nginx` in
+  [`examples/minimal`](./examples/minimal/main.jsonnet) — ~15 lines that mention none of this —
+  stamps out a Deployment with a hardened pod + container `securityContext`, resource requests,
+  and readiness/liveness probes, because the deployment generator bakes them in. Every
+  component gets the same good defaults for free.
+- **Improvements compound centrally.** Adopt a better probe shape or a new hardening default in
+  [`workload.libsonnet`](./lib/chartwright/workload.libsonnet), re-stamp, and every chart moves
+  forward at once — instead of drifting apart as each hand-edited chart reinvents the wheel and
+  bad defaults propagate.
+- **Consequences are reviewable.** The rendered chart is a committed artifact, so a jsonnet
+  change shows the exact Kubernetes diff (new mount, changed probe, extra RBAC) in review.
+- **One structured way to pass config** — the whole app config as a single opaque value Tempo
+  validates at runtime, not a 1:1 mapping of every knob (tempo-distributed's maintenance tax).
+
+The thesis in one line: **users want to *consume* Helm; authors don't want to *author* it** —
+so author your practices in jsonnet and let the machine produce the Helm. See
+[`DESIGN.md`](./DESIGN.md) for the full rationale.
 
 ## Status
 

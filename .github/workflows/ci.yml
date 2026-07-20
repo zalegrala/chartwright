@@ -34,8 +34,11 @@ jobs:
 
       # Runs unit tests AND the installability acceptance gates (helm lint +
       # helm template + kubeconform, incl. CRD catalog) since the tools are present.
+      # -count=1 disables the test cache: several gates read external jsonnet /
+      # fixture files that the Go cache doesn't track, so a stale pass is possible
+      # without it.
       - name: Test
-        run: go test ./... -v
+        run: go test ./... -v -count=1
 
   install:
     name: real install (kind)
