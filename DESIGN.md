@@ -22,6 +22,16 @@ chartwright lets a team maintain a chart through *mechanical leverage* — autho
 (which the team already uses), and the machine produces the Helm chart nobody wants to
 hand-write. The deliverable this project cares about is the **machinery**, not any one chart.
 
+**The value isn't "generate a chart" — it's "encode good practice once and stamp it
+everywhere."** The generators are the point: they hold your Kubernetes/application deployment
+practices (probes, hardened security contexts, resource requests, PDB floors, config handling)
+in one place, and every component in every chart is stamped from them, uniformly. Improve a
+default in one generator and re-stamp — every chart moves forward together, instead of N
+hand-edited charts drifting apart while questionable defaults propagate (the inverse of failure
+mode #2 above). The generator is the unit of institutional knowledge; the chart is throwaway
+output. So a 15-line component descriptor that mentions no security context still stamps out a
+hardened, probed, resource-requested workload — because the generator bakes that in.
+
 The goal is a **spec-driven stamper**: a consumable description of components renders a
 complete Helm chart (Deployments, StatefulSets, Services, etc.) on disk, ready to install.
 The same approach should serve both the microservices topology and the single-binary, and
